@@ -1,13 +1,15 @@
-"use strict";
+'use strict';
 
-import { app, protocol, BrowserWindow } from "electron";
-import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
-import installExtension, { VUEJS3_DEVTOOLS } from "electron-devtools-installer";
-const isDevelopment = process.env.NODE_ENV !== "production";
+import { app, protocol, BrowserWindow, ipcMain } from 'electron';
+import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
+import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer';
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+let mainWindow;
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
-  { scheme: "app", privileges: { secure: true, standard: true } },
+  { scheme: 'app', privileges: { secure: true, standard: true } },
 ]);
 
 async function createWindow() {
@@ -23,27 +25,29 @@ async function createWindow() {
     },
   });
 
+  mainWindow = win;
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
     if (!process.env.IS_TEST) win.webContents.openDevTools();
   } else {
-    createProtocol("app");
+    createProtocol('app');
     // Load the index.html when not in development
-    win.loadURL("app://./index.html");
+    win.loadURL('app://./index.html');
   }
 }
 
 // Quit when all windows are closed.
-app.on("window-all-closed", () => {
+app.on('window-all-closed', () => {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== "darwin") {
+  if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-app.on("activate", () => {
+app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -52,28 +56,56 @@ app.on("activate", () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", async () => {
+app.on('ready', async () => {
   if (isDevelopment && !process.env.IS_TEST) {
     // Install Vue Devtools
     try {
       await installExtension(VUEJS3_DEVTOOLS);
     } catch (e) {
-      console.error("Vue Devtools failed to install:", e.toString());
+      console.error('Vue Devtools failed to install:', e.toString());
     }
   }
   createWindow();
+
+  ipcMain.on('nodejs-rename-file', (_, args) => {
+    const fs = require('fs');
+    const files = JSON.parse(args);
+    let count = 0;
+    let errorCount = 0;
+    files.forEach(({ oldFileName, newFileName }) => {
+      // console.log(oldFileName + "=>>" + newFileName);
+      fs.rename(oldFileName, newFileName, (error) => {
+        if (error) {
+          errorCount++;
+          console.error(error);
+        } else {
+          count++;
+        }
+        if (count + errorCount === files.length && mainWindow) {
+          // 处理 Node.js 模块的返回结果
+          mainWindow.webContents.send('nodejs-result', {
+            success: errorCount === 0,
+            msg:
+              errorCount === 0
+                ? '所有文件处理成功'
+                : `${errorCount}个文件处理失败`,
+          });
+        }
+      });
+    });
+  });
 });
 
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
-  if (process.platform === "win32") {
-    process.on("message", (data) => {
-      if (data === "graceful-exit") {
+  if (process.platform === 'win32') {
+    process.on('message', (data) => {
+      if (data === 'graceful-exit') {
         app.quit();
       }
     });
   } else {
-    process.on("SIGTERM", () => {
+    process.on('SIGTERM', () => {
       app.quit();
     });
   }
