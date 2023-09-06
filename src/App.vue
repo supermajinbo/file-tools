@@ -1,17 +1,30 @@
 <template>
   <div class="main">
     <div class="flex">
-      <el-select v-model="mode" class="wid100">
+      <el-select v-model="mode" class="wid200">
+        <template #prefix>
+          <div class="select-prefix">
+            模式
+          </div>
+        </template>
         <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-select v-model="addType" v-if="isAdd">
-        <el-option label="在文件名前添加" value="before" />
-        <el-option label="在文件名后添加" value="after" />
+      <el-select v-model="addType" v-if="isAdd" class="wid220">
+        <template #prefix>
+          <div class="select-prefix">
+            添加模式
+          </div>
+        </template>
+        <el-option label="文件名前" value="before" />
+        <el-option label="文件名后" value="after" />
       </el-select>
-      <el-input v-model="addBeforeText" placeholder="请输入" class="wid30p" clearable></el-input>
-      <div v-if="!isAdd" class="wid50">替换为</div>
-      <el-input v-if="!isAdd" v-model="addAfterText" placeholder="请输入" class="wid30p" clearable></el-input>
-      <el-button type="primary" @click="reNameFile">执行</el-button>
+      <el-input v-model="addBeforeText" placeholder="请输入内容" class="wid30p" clearable>
+        <template #prepend>{{ isAdd ? '添加内容' : '原内容' }}</template>
+      </el-input>
+      <el-input v-if="!isAdd" v-model="addAfterText" placeholder="请输入内容" class="wid30p" clearable>
+        <template #prepend>新内容</template>
+      </el-input>
+      <el-button type="primary" @click="reNameFile">{{ isAdd ? '添加' : '替换' }}</el-button>
     </div>
     <div class="flex">
       <label for="directory">
@@ -22,8 +35,8 @@
         <el-button type="primary" @click="handleClick">选择文件</el-button>
         <input type="file" id="file" multiple style="display: none;" />
       </label>
+      <el-button type="primary" @click="handleClear">清空文件列表</el-button>
     </div>
-
     <el-table :data="tableData" border style="width: 100%" v-if="tableData?.length">
       <el-table-column prop="oldFileName" label="源文件名" />
       <el-table-column prop="newFileName" label="新文件名" />
@@ -57,6 +70,10 @@ const handleClick = (even) => {
   even.target.parentNode.click()
 }
 
+const handleClear = () => {
+  tableData.value = []
+}
+
 function reNameFile() {
   if (!tableData.value.length) {
     ElMessage.warning('请选择文件或文件夹')
@@ -72,10 +89,11 @@ function reNameFile() {
 function getFiles(e) {
   const fileArr = []
   var files = e.target.files;
-  const pathArr = files?.[0]?.path?.split('/')
-  pathArr.pop()
-  const path = pathArr.join('/')
+
   for (var i = 0; i < files.length; i++) {
+    const pathArr = files[i]?.path?.split('/')
+    pathArr.pop()
+    const path = pathArr.join('/')
     fileArr.push({
       path,
       name: files[i].name,
@@ -149,6 +167,7 @@ onBeforeUnmount(removeEventListener)
   display: flex;
   flex-direction: column;
   gap: 20px;
+  margin: 20px;
 }
 
 .flex {
@@ -157,19 +176,28 @@ onBeforeUnmount(removeEventListener)
   align-items: center;
 }
 
-.wid50 {
-  min-width: 50px;
-  max-width: 50px;
+.wid200 {
+  min-width: 180px;
+  max-width: 180px;
 }
 
-.wid100 {
-  min-width: 100px;
-  max-width: 100px;
+.wid220 {
+  min-width: 220px;
+  max-width: 220px;
 }
 
 .wid30p {
   width: 30%;
   min-width: 200px;
   max-width: 600px;
+}
+
+.select-prefix {
+  position: relative;
+  left: -10px;
+  background-color: var(--el-fill-color-light);
+  padding: 0 20px;
+  border-radius: 3px 0 0 3px;
+  border-right: 1px solid #ddd;
 }
 </style>
