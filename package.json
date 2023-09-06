@@ -1,7 +1,10 @@
 {
-  "name": "batch-file-name-change",
+  "name": "batch-rename",
   "version": "0.1.0",
   "private": true,
+  "description": "批量重命名文件",
+  "productName": "批量重命名文件",
+  "author": "JinboMa",
   "scripts": {
     "dev": "npm run electron:serve",
     "serve": "vue-cli-service serve",
