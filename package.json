@@ -1,5 +1,5 @@
 {
-  "name": "batch-rename",
+  "name": "file-tools",
   "version": "0.1.0",
   "private": true,
   "description": "批量重命名文件",
